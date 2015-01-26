@@ -10,8 +10,8 @@
 //all data is handled as 32 bits, 4 bytes
 float inFloats[IN_FLOAT_NUM];
 float outFloats[OUT_FLOAT_NUM];
-int inInts[IN_INT_NUM];
-int outInts[OUT_INT_NUM];
+int32_t inInts[IN_INT_NUM];
+int32_t outInts[OUT_INT_NUM];
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
@@ -67,11 +67,42 @@ void loop() {
 }
 
 /*
+ * Checks the network input buffer, processes all updates
+ * Sends updates for all data needed
+ *     For now, will send all data values regardless of whether they changed
+ */
+IPAddress staticRemote;
+void handleDataSync(){
+  int packetSize = Udp.parsePacket();
+  if(packetSize){
+    
+    /*This code should check to see if the new remote IP is the same as the save staticRemote IP
+    //But The reference for the IPAddress struct is shit and I don't know C++ well enough to figure it out
+    IPAddress remote = Udp.remoteIP();
+    void* IP1 = static_cast<void*>(&staticRemote);
+    void* IP2 = static_cast<void*>(&remote);
+    if(*IP1 == *IP2){
+      
+    }*/
+    
+    Serial.println(Udp.remotePort());
+
+    // read the packet into packetBufffer
+    Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
+    proccessPacket(packetBuffer);
+  }
+  // send a reply, to the IP address and port that sent us the packet we received
+  Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+  Udp.write(updateOutData());
+  Udp.endPacket();
+}
+
+/*
  * Disasemble the buffer stream into individual updates
  * Stream format:
  * 0x00 <Data index> <Data>x4  Repeat
  */
-void receivePacket(byte buffer[]){
+void proccessPacket(byte buffer[]){
   int i = 0;
   while(i < sizeof(buffer)/sizeof(byte)){
     if(buffer[i] == 0){
