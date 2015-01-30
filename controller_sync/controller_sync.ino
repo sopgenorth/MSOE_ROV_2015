@@ -8,10 +8,49 @@
 #define OUT_INT_NUM 3
 
 //all data is handled as 32 bits, 4 bytes
-float inFloats[IN_FLOAT_NUM];
-float outFloats[OUT_FLOAT_NUM];
-int32_t inInts[IN_INT_NUM];
-int32_t outInts[OUT_INT_NUM];
+struct inFloats{
+  float if1;
+  float if2;
+  float if3;
+};
+union {
+  float inFarr[IN_FLOAT_NUM];
+  inFloats inFs;
+};
+
+struct outFloats{
+  float of1;
+  float of2;
+  float of3;
+};
+union{
+  float outFarr[OUT_FLOAT_NUM];
+  outFloats outFs;
+};
+
+struct inInts{
+  float ii1;
+  float ii2;
+  float ii3;
+};
+union{
+  int32_t inInts[IN_INT_NUM];
+  inInts inIs;
+};
+
+struct outInts{
+  float oi1;
+  float oi2;
+  float oi3;
+};
+union{
+  int32_t outInts[OUT_INT_NUM];
+  outInts outIs;
+};
+
+
+
+
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
@@ -21,7 +60,7 @@ IPAddress ip(192, 168, 1, 181);
 unsigned int localPort = 8888;      // local port to listen on
 
 // buffers for receiving and sending data
-char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet,
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet
 
 
 // An EthernetUDP instance to let us send and receive packets over UDP
