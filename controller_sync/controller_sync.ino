@@ -73,9 +73,9 @@ void loop() {
 /*
  * Returns array of all output data formatted to be sent directly over UDP
  */
-byte outStream[(OUT_NUM) * (2 + sizeof(int32_t))];
+const int outStreamLen = (OUT_NUM) * (2 + sizeof(int32_t));
+byte outStream[outStreamLen];
 byte * updateOutData(){
-  
   for(byte i = 0; i < OUT_NUM; i++){
     outStream[i] = 0;
     outStream[i + 1] = i;
@@ -110,7 +110,9 @@ void handleDataSync(){
   }
   // send a reply, to the IP address and port that sent us the packet we received
   Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-  Udp.write(updateOutData());
+  byte* outData = updateOutData();
+  
+  Udp.write(outData, outStreamLen);
   Udp.endPacket();
 }
 
