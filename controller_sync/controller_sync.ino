@@ -1,7 +1,6 @@
 #include <SPI.h>         // needed for Arduino versions later than 0018
 #include <Ethernet.h>
 #include <EthernetUdp.h>         // UDP library from: bjoern@cs.stanford.edu 12/30/2008
-//Hello Sam da man
 
 #define IN_NUM 3
 //Used to give names to stored data the has been received
@@ -19,7 +18,9 @@ struct outNames{
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
 byte mac[] = {0x00, 0x1A, 0xB6, 0x02, 0xA4, 0x17};
-IPAddress ip(192, 168, 1, 181);
+
+//TODO: figure out how to find the IP of this device dynamically
+IPAddress ip(192, 168, 1, 114);
 
 unsigned int localPort = 8888;      // local port to listen on
 
@@ -36,7 +37,6 @@ void setup() {
   Udp.begin(localPort);
   
   Serial.begin(9600);
-  
 }
 
 void loop() {
@@ -66,6 +66,7 @@ void loop() {
     Udp.write("acknowledge");
     Udp.endPacket();
   }
+  Udp.write("Waiting");
   delay(10);
 }
 
