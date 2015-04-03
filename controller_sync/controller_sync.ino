@@ -144,6 +144,6 @@ void updateSegment(byte index, byte * data){
   if(index >= IN_NUM){
     return;
   }
-  memcpy(&inGroup + index, data, sizeof(inGroup[index]));
+  memcpy(&inGroup + index, data, sizeof(int32_t));
 }
 
