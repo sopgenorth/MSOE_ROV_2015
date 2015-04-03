@@ -73,17 +73,13 @@ void loop() {
 /*
  * Returns array of all output data formatted to be sent directly over UDP
  */
-byte[] updateOutData(){
-  byte outStream[(OUT_FLOAT_NUM + OUT_INT_NUM) * (2 + sizeof(int))];
-  for(unsigned char i = 0; i < OUT_FLOAT_NUM; i++){
-    outStream[i] = 0;
-    outStream[i + 1] = i | 0x80;
-    memcpy(outStream + i + 2, outFloats + i, sizeof(float));
-  }
-  for(unsigned char i = 0; i < OUT_INT_NUM; i++){
+byte outStream[(OUT_NUM) * (2 + sizeof(int32_t))];
+byte * updateOutData(){
+  
+  for(byte i = 0; i < OUT_NUM; i++){
     outStream[i] = 0;
     outStream[i + 1] = i;
-    memcpy(outStream + i + 2, outInts + i, sizeof(int));
+    memcpy(outStream + i + 2, &outGroup + i, sizeof(int32_t));
   }
 }
 
@@ -146,6 +142,6 @@ void updateSegment(byte index, byte * data){
   if(index >= IN_NUM){
     return;
   }
-  memcpy(inGroup + index, data, sizeof(inGroup[index]));
+  memcpy(&inGroup + index, data, sizeof(inGroup[index]));
 }
 
