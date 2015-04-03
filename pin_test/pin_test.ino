@@ -11,7 +11,7 @@ void setup(){
   for(int b = 0; b < rangeNum; b++)
     for(int i = ranges[b * 2]; i < ranges[b * 2 + 1]; i++)
       pinMode(i, OUTPUT);
-  Serial.begin();
+  Serial.begin(4800);
 }
 
 void loop(){

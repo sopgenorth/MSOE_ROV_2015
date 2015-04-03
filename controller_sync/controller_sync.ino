@@ -2,54 +2,26 @@
 #include <Ethernet.h>
 #include <EthernetUdp.h>         // UDP library from: bjoern@cs.stanford.edu 12/30/2008
 
-#define IN_FLOAT_NUM 3
-#define OUT_FLOAT_NUM 3
-#define IN_INT_NUM 3
-#define OUT_INT_NUM 3
-
-//all data is handled as 32 bits, 4 bytes
-struct inFloats{
-  float if1;
-  float if2;
-  float if3;
-};
-union {
-  float inFarr[IN_FLOAT_NUM];
-  inFloats inFs;
-};
-
-struct outFloats{
-  float of1;
-  float of2;
-  float of3;
-};
-union{
-  float outFarr[OUT_FLOAT_NUM];
-  outFloats outFs;
-};
-
-struct inInts{
-  float ii1;
-  float ii2;
-  float ii3;
-};
-union{
-  int32_t inInts[IN_INT_NUM];
-  inInts inIs;
-};
-
-struct outInts{
-  float oi1;
-  float oi2;
-  float oi3;
-};
-union{
-  int32_t outInts[OUT_INT_NUM];
-  outInts outIs;
-};
+#define IN_NUM 3
+#define OUT_NUM 3
 
 
 
+
+/*union ins{
+  struct inNames{
+    int32_t in1, in2, in3;
+  };
+  int32_t inNums[3];
+} inGroup;*/
+
+
+
+
+
+struct outNames{
+  int32_t o1, o2, o3;
+} outGroup;
 
 
 // Enter a MAC address and IP address for your controller below.
@@ -60,7 +32,7 @@ IPAddress ip(192, 168, 1, 181);
 unsigned int localPort = 8888;      // local port to listen on
 
 // buffers for receiving and sending data
-char packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet
+unsigned byte packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet
 
 
 // An EthernetUDP instance to let us send and receive packets over UDP
@@ -155,25 +127,15 @@ void proccessPacket(byte buffer[]){
 
 /*
  * Update the peice of data just received. Input format:
- * index: Bit 0 : 1 for float, 0 for integer
- *        Bit 1-7 : index in the data array
+ * index: Bit 0-7 : index in the data array
  * data:  pointer to byte array containing the dissasembled
  *         float or int
  */
 void updateSegment(byte index, byte * data){
-  if(index & 0x80){
-    index = index & 0x7F;
-    if(index >= IN_FLOAT_NUM){
-      return;
-    }
-    memcpy(inFloats + index, data, sizeof(inFloats[index]));
-  }else{
-    index = index & 0x7F;
-    if(index >= IN_INT_NUM){
-      return;
-    }
-    memcpy(inInts + index, data, sizeof(inInts[index]));
+  if(index >= IN_FLOAT_NUM){
+    return;
   }
+  memcpy(inFloats + index, data, sizeof(inFloats[index]));
 }
 
 /*
