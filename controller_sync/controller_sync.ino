@@ -7,18 +7,12 @@
 
 
 
+//Used to give names to stored data the has been received
+struct inNames{
+  int32_t in1, in2, in3;
+} inGroup;
 
-/*union ins{
-  struct inNames{
-    int32_t in1, in2, in3;
-  };
-  int32_t inNums[3];
-} inGroup;*/
-
-
-
-
-
+//used to give names to stored data to send back
 struct outNames{
   int32_t o1, o2, o3;
 } outGroup;
@@ -77,6 +71,24 @@ void loop() {
   delay(10);
 }
 
+
+/*
+ * Returns array of all output data formatted to be sent directly over UDP
+ */
+byte[] updateOutData(){
+  byte outStream[(OUT_FLOAT_NUM + OUT_INT_NUM) * (2 + sizeof(int))];
+  for(unsigned char i = 0; i < OUT_FLOAT_NUM; i++){
+    outStream[i] = 0;
+    outStream[i + 1] = i | 0x80;
+    memcpy(outStream + i + 2, outFloats + i, sizeof(float));
+  }
+  for(unsigned char i = 0; i < OUT_INT_NUM; i++){
+    outStream[i] = 0;
+    outStream[i + 1] = i;
+    memcpy(outStream + i + 2, outInts + i, sizeof(int));
+  }
+}
+
 /*
  * Checks the network input buffer, processes all updates
  * Sends updates for all data needed
@@ -112,6 +124,7 @@ void handleDataSync(){
  * Disasemble the buffer stream into individual updates
  * Stream format:
  * 0x00 <Data index> <Data>x4  Repeat
+ * buffer: contains raw byte stream from UDP
  */
 void proccessPacket(byte buffer[]){
   int i = 0;
@@ -132,27 +145,9 @@ void proccessPacket(byte buffer[]){
  *         float or int
  */
 void updateSegment(byte index, byte * data){
-  if(index >= IN_FLOAT_NUM){
+  if(index >= IN_NUM){
     return;
   }
-  memcpy(inFloats + index, data, sizeof(inFloats[index]));
+  memcpy(inGroup + index, data, sizeof(inGroup[index]));
 }
 
-/*
- * Returns array of all output data formatted to be sent directly over UDP
- */
-byte[] updateOutData(){
-  byte outStream[(OUT_FLOAT_NUM + OUT_INT_NUM) * (2 + sizeof(int))];
-  for(unsigned char i = 0; i < OUT_FLOAT_NUM; i++){
-    outStream[i] = 0;
-    outStream[i + 1] = i | 0x80;
-    memcpy(outStream + i + 2, outFloats + i, sizeof(float));
-  }
-  for(unsigned char i = 0; i < OUT_INT_NUM; i++){
-    outStream[i] = 0;
-    outStream[i + 1] = i;
-    memcpy(outStream + i + 2, outInts + i, sizeof(int));
-  }
-  
-  
-}
