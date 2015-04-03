@@ -1,17 +1,15 @@
 #include <SPI.h>         // needed for Arduino versions later than 0018
 #include <Ethernet.h>
 #include <EthernetUdp.h>         // UDP library from: bjoern@cs.stanford.edu 12/30/2008
+//Hello Sam da man
 
 #define IN_NUM 3
-#define OUT_NUM 3
-
-
-
 //Used to give names to stored data the has been received
 struct inNames{
   int32_t in1, in2, in3;
 } inGroup;
 
+#define OUT_NUM 3
 //used to give names to stored data to send back
 struct outNames{
   int32_t o1, o2, o3;
