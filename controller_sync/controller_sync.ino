@@ -14,73 +14,59 @@ struct outNames{
   int32_t o1, o2, o3;
 } outGroup;
 
+#define UPDATE_RATE 100
+#define DEBUG true
+#define LOCAL_PORT 4545
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
-byte mac[] = {0x00, 0x1A, 0xB6, 0x02, 0xA4, 0x17};
+byte mac[] = {0x00, 0x1A, 0xB6, 0x02, 0xAA, 0xD2};
 
 //TODO: figure out how to find the IP of this device dynamically
-IPAddress ip(192, 168, 1, 114);
-
-unsigned int localPort = 8888;      // local port to listen on
+IPAddress ip(192, 168, 1, 117);
 
 // buffers for receiving and sending data
 byte packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet
 
-
 // An EthernetUDP instance to let us send and receive packets over UDP
 EthernetUDP Udp;
-
-void setup() {
+void setupSync(){
   // start the Ethernet and UDP:
   Ethernet.begin(mac,ip);
-  Udp.begin(localPort);
+  Udp.begin(LOCAL_PORT);
   
-  Serial.begin(9600);
+  if(DEBUG){
+    Serial.begin(115200);
+    Serial.println(Ethernet.localIP());
+  }
 }
 
-void loop() {
-  // if there's data available, read a packet
+//ms between update pings
+int time;
+void updateSync(){
   int packetSize = Udp.parsePacket();
   if(packetSize){
-    Serial.print("Received packet of size ");
-    Serial.println(packetSize);
-    Serial.print("From ");
-    IPAddress remote = Udp.remoteIP();
-    for (int i =0; i < 4; i++){
-      Serial.print(remote[i], DEC);
-      if (i < 3){
-        Serial.print(".");
-      }
-    }
-    Serial.print(", port ");
-    Serial.println(Udp.remotePort());
-
     // read the packet into packetBufffer
-    Udp.read(packetBuffer,UDP_TX_PACKET_MAX_SIZE);
-    Serial.println("Contents:");
-    //Serial.println(packetBuffer);
-
-    // send a reply, to the IP address and port that sent us the packet we received
-    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    Udp.write("acknowledge");
-    Udp.endPacket();
+    proccessPacket(packetBuffer, Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE));
   }
-  Udp.write("Waiting");
-  delay(10);
+  if(time + UPDATE_RATE < millis()){
+    time = millis();
+    handleDataOut();
+  }
 }
 
-
 /*
- * Returns array of all output data formatted to be sent directly over UDP
+ * Returns pointer to array of all output data formatted to be sent directly over UDP
  */
-const int outStreamLen = (OUT_NUM) * (2 + sizeof(int32_t));
+const int outSegLen = (2 + sizeof(int32_t));
+const int outStreamLen = (OUT_NUM) * outSegLen;
 byte outStream[outStreamLen];
-byte * updateOutData(){
+void updateOutStream(){
+  int * outs = (int*)(&outGroup);
   for(byte i = 0; i < OUT_NUM; i++){
-    outStream[i] = 0;
-    outStream[i + 1] = i;
-    memcpy(outStream + i + 2, &outGroup + i, sizeof(int32_t));
+    outStream[i * outSegLen] = 0;
+    outStream[(i * outSegLen) + 1] = (byte)(i + 1);
+    memcpy(outStream + (i*outSegLen) + 2, outs + i, sizeof(int32_t));
   }
 }
 
@@ -89,49 +75,38 @@ byte * updateOutData(){
  * Sends updates for all data needed
  *     For now, will send all data values regardless of whether they changed
  */
-IPAddress staticRemote;
-void handleDataSync(){
-  int packetSize = Udp.parsePacket();
-  if(packetSize){
-    
-    /*This code should check to see if the new remote IP is the same as the save staticRemote IP
-    //But The reference for the IPAddress struct is shit and I don't know C++ well enough to figure it out
-    IPAddress remote = Udp.remoteIP();
-    void* IP1 = static_cast<void*>(&staticRemote);
-    void* IP2 = static_cast<void*>(&remote);
-    if(*IP1 == *IP2){
-      
-    }*/
-    
-    Serial.println(Udp.remotePort());
-
-    // read the packet into packetBufffer
-    Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
-    proccessPacket(packetBuffer);
-  }
+void handleDataOut(){
   // send a reply, to the IP address and port that sent us the packet we received
   Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-  byte* outData = updateOutData();
+  updateOutStream();
   
-  Udp.write(outData, outStreamLen);
+  Udp.write(outStream, outStreamLen);
   Udp.endPacket();
 }
 
 /*
  * Disasemble the buffer stream into individual updates
  * Stream format:
- * 0x00 <Data index> <Data>x4  Repeat
+ * 0x00 <Data index + 1> <Data>x4  Repeat
  * buffer: contains raw byte stream from UDP
  */
-void proccessPacket(byte buffer[]){
+void proccessPacket(byte buffer[], int size){
   int i = 0;
-  while(i < sizeof(buffer)/sizeof(byte)){
-    if(buffer[i] == 0){
-      updateSegment(buffer[i + 1], buffer + i + 2);
+  while(i < size){
+    if(buffer[i] == 0 && (size - i) >= 6 && buffer[i+1] <= IN_NUM){
+      updateSegment(buffer[i + 1] - 1, buffer + i + 2);
       i += 6;
     }else{
       i++;
     }
+  }
+  if(DEBUG){
+    int * ins = (int*)(&inGroup);
+    for(byte i = 0; i < IN_NUM; i++){
+      Serial.print(*(ins + i));
+      Serial.print(", ");
+    }
+    Serial.println();
   }
 }
 
@@ -145,6 +120,21 @@ void updateSegment(byte index, byte * data){
   if(index >= IN_NUM){
     return;
   }
-  memcpy(&inGroup + index, data, sizeof(int32_t));
+  memcpy((int*)(&inGroup) + index, data, sizeof(int32_t));
+}
+//////////////////////////////////////////////////////////////////////////////////////
+//**********************HARDWARE CONTROL CODE GOES BELOW HERE***********************//
+//////////////////////////////////////////////////////////////////////////////////////
+
+
+
+void setup() {
+  setupSync();
 }
 
+void loop(){
+  // if there's data available, read a packet
+  outGroup.o1 = millis();
+  outGroup.o2 = 0xFFFFFF - millis();
+  updateSync();
+}
