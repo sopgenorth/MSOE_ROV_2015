@@ -1,6 +1,37 @@
-#include <SPI.h>         // needed for Arduino versions later than 0018
+//////////////////////////////////////////////////////////////////////////////////////////////
+//*******Dan Miller's super-excellent computer to microcontroller data transfer code!*******//
+//////////////////////////////////////////////////////////////////////////////////////////////
+/*
+Usage guide:
+Output:
+  Put variable names that are to be sent to the computer in the outNames struct, and update the
+  OUT_NUM def to accurately represent how many variables are placed into the struct
+Input:
+  Put variable names that are to be sent to the computer in the inNames struct, and update the
+  IN_NUM def to accurately represent how many variables are placed into the struct
+
+Value Access:
+  Use the pre-defined instances of either inNames or outNames(inGroup and outGroup, respecively)
+  to access the variables named previously. The inGroup values can be modified, but will be
+  overwritten on the next update received from the computer. The outGroup values should be
+  modified: again, these are the values which will be sent to the computer side.
+
+Other Constants:
+  UPDATE_RATE - the minimum time in ms between updates sent to the server
+  DEBUG - true for prints to serial, false otherwise
+  LOCAL_PORT - the port to be used by the device
+  mac[] - the MAC address for this device. Should be set manually
+  ip - the IP to be used for this device
+
+Necessary Method Calls:
+  setupSync() - must be called sometime during the setup() function. if DEBUG, initializes Serial
+  updateSync() - should be called very often in loop(). Checks for updates in the network buffer,
+      and if UPDATE_RATE ms have passed since last update will send an update back to the computer
+*/
+
+#include <SPI.h>
 #include <Ethernet.h>
-#include <EthernetUdp.h>         // UDP library from: bjoern@cs.stanford.edu 12/30/2008
+#include <EthernetUdp.h>
 
 #define IN_NUM 3
 //Used to give names to stored data the has been received
@@ -20,10 +51,10 @@ struct outNames{
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
-byte mac[] = {0x00, 0x1A, 0xB6, 0x02, 0xAA, 0xD2};
+const byte mac[] = {0x00, 0x1A, 0xB6, 0x02, 0xAA, 0xD2};
 
-//TODO: figure out how to find the IP of this device dynamically
 IPAddress ip(192, 168, 1, 117);
+
 
 // buffers for receiving and sending data
 byte packetBuffer[UDP_TX_PACKET_MAX_SIZE]; //buffer to hold incoming packet
